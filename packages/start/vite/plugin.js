@@ -20,7 +20,7 @@ import babelServerModule from "../server/server-functions/babel.js";
 import routeResource from "../server/serverResource.js";
 
 const require = createRequire(import.meta.url);
-const requireCwd = createRequire(pathToFileURL(join(process.cwd(), "dummy.js")));
+const requireCwd = createRequire(pathToFileURL(join(process.cwd(), "dummy.js")).href);
 
 // @ts-ignore
 globalThis.DEBUG = debug("start:vite");
@@ -661,16 +661,18 @@ function find(locate, cwd) {
 
 function detectAdapter() {
   const startPkgJson = require("../package.json");
-  const supportedAdapters = Array.from(Object.keys(startPkgJson.devDependencies)).filter(
-    name => name.startsWith("solid-start-")
+  const supportedAdapters = Array.from(Object.keys(startPkgJson.devDependencies)).filter(name =>
+    name.startsWith("solid-start-")
   );
   const cwdPackageJson = JSON.parse(
     fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8")
   );
-  const allDepdenencies = Array.from(Object.keys({
-    ...cwdPackageJson.dependencies,
-    ...cwdPackageJson.devDependencies
-  }));
+  const allDepdenencies = Array.from(
+    Object.keys({
+      ...cwdPackageJson.dependencies,
+      ...cwdPackageJson.devDependencies
+    })
+  );
 
   /**
    * @type {string[]}
