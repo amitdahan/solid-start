@@ -19,6 +19,7 @@ import routeDataHmr from "../server/routeDataHmr.js";
 import babelServerModule from "../server/server-functions/babel.js";
 import routeResource from "../server/serverResource.js";
 
+const require = createRequire(import.meta.url);
 const requireCwd = createRequire(pathToFileURL(join(process.cwd(), "dummy.js")).href);
 
 // @ts-ignore
@@ -658,28 +659,39 @@ function find(locate, cwd) {
   return find(locate, path.join(cwd, ".."));
 }
 
-// const nodeModulesPath = find("node_modules", process.cwd());
+function detectAdapter() {
+  const startPkgJson = require("../package.json");
+  const supportedAdapters = Array.from(Object.keys(startPkgJson.devDependencies)).filter(name =>
+    name.startsWith("solid-start-")
+  );
+  const cwdPackageJson = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8")
+  );
+  const allDepdenencies = Array.from(
+    Object.keys({
+      ...cwdPackageJson.dependencies,
+      ...cwdPackageJson.devDependencies
+    })
+  );
 
-// function detectAdapter() {
-//   let adapters = [];
-//   fs.readdirSync(nodeModulesPath).forEach(dir => {
-//     if (dir.startsWith("solid-start-")) {
-//       const pkg = JSON.parse(
-//         fs.readFileSync(path.join(nodeModulesPath, dir, "package.json"), {
-//           encoding: "utf8"
-//         })
-//       );
-//       if (pkg.solid && pkg.solid.type === "adapter") {
-//         adapters.push(dir);
-//       }
-//     }
-//   });
+  /**
+   * @type {string[]}
+   */
+  let adapters = [];
+  allDepdenencies.forEach(dep => {
+    if (supportedAdapters.includes(dep)) {
+      const pkg = requireCwd(`${dep}/package.json`);
+      if (pkg.solid?.type === "adapter") {
+        adapters.push(dep);
+      }
+    }
+  });
 
-//   // Ignore the default adapter.
-//   adapters = adapters.filter(adapter => adapter !== "solid-start-node");
+  // Ignore the default adapter.
+  adapters = adapters.filter(adapter => adapter !== "solid-start-node");
 
-//   return adapters.length > 0 ? adapters[0] : "solid-start-node";
-// }
+  return adapters.length > 0 ? adapters[0] : "solid-start-node";
+}
 
 const findAny = (path, name, exts = [".js", ".ts", ".jsx", ".tsx", ".mjs", ".mts"]) => {
   for (var ext of exts) {
@@ -697,7 +709,7 @@ const findAny = (path, name, exts = [".js", ".ts", ".jsx", ".tsx", ".mjs", ".mts
 export default function solidStart(options) {
   options = Object.assign(
     {
-      adapter: process.env.START_ADAPTER ? process.env.START_ADAPTER : "solid-start-node",
+      adapter: process.env.START_ADAPTER ? process.env.START_ADAPTER : detectAdapter(),
       appRoot: "src",
       routesDir: "routes",
       ssr: process.env.START_SSR === "false" ? false : true,
