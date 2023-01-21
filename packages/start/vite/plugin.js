@@ -20,7 +20,7 @@ import babelServerModule from "../server/server-functions/babel.js";
 import routeResource from "../server/serverResource.js";
 
 const require = createRequire(import.meta.url);
-const requireCwd = createRequire(join(process.cwd(), 'dummy.js'));
+const requireCwd = createRequire(pathToFileURL(join(process.cwd(), "dummy.js")));
 
 // @ts-ignore
 globalThis.DEBUG = debug("start:vite");
@@ -406,13 +406,11 @@ function solidsStartRouteManifest(options) {
 
 async function resolveAdapter(config) {
   if (typeof config.solidOptions.adapter === "string") {
-    return (await import(
-      requireCwd.resolve(config.solidOptions.adapter)
-    )).default();
+    return (await import(requireCwd.resolve(config.solidOptions.adapter))).default();
   } else if (Array.isArray(config.solidOptions.adapter)) {
-    return (await import(
-      requireCwd.resolve(config.solidOptions.adapter[0])
-    )).default(config.solidOptions.adapter[1]);
+    return (await import(requireCwd.resolve(config.solidOptions.adapter[0]))).default(
+      config.solidOptions.adapter[1]
+    );
   } else {
     return config.solidOptions.adapter;
   }
